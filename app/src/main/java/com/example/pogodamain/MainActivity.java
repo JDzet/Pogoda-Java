@@ -34,7 +34,7 @@ public class MainActivity extends AppCompatActivity {
     LocationManager locationManager;
 
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -47,27 +47,11 @@ public class MainActivity extends AppCompatActivity {
         temp = findViewById(R.id.textViewTemp1);
         timeZonem = findViewById(R.id.textViewTimeZone1);
         LocationText = findViewById(R.id.textViewCordinat1);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            locationManager = getSystemService(LocationManager.class);
+        }
 
 
-
-        api.getWeather(10, 10, "e012f24a2044e4fe9504ac4db488f059","metric").enqueue(new Callback<Whether>() {
-            @Override
-            public void onResponse(Call<Whether> call, Response<Whether> response) {
-                if(response.code() == 200){
-                    Whether whether = response.body();
-                    temp.setText("температура: " + whether.getCurrent().getTemp()+"\nощущается как: " + whether.getCurrent().getFeels_like());
-                    timeZonem.setText("часовой пояс: " + whether.getTimezone());
-                }
-            }
-
-            @Override
-            public void onFailure(Call<Whether> call, Throwable t) {
-                Toast.makeText(getApplicationContext(), t.getMessage(), Toast.LENGTH_LONG).show();
-            }
-        });
-
-
-        locationManager = getSystemService(LocationManager.class);
         if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED){
             ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION},0);
@@ -75,7 +59,22 @@ public class MainActivity extends AppCompatActivity {
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 1, new LocationListener() {
             @Override
             public void onLocationChanged(@NonNull Location location) {
+                api.getWeather(location.getAltitude(), location.getLongitude(), "e012f24a2044e4fe9504ac4db488f059","metric").enqueue(new Callback<Whether>() {
+                    @Override
+                    public void onResponse(Call<Whether> call, Response<Whether> response) {
+                        if(response.code() == 200){
+                            Whether whether = response.body();
+                            temp.setText("температура: " + whether.getCurrent().getTemp()+"\nощущается как: " + whether.getCurrent().getFeels_like());
+                            timeZonem.setText("часовой пояс: " + whether.getTimezone());
+                            LocationText.setText("Долгота " + location.getAltitude() + "\nШирота "+ location.getLongitude());
+                        }
+                    }
 
+                    @Override
+                    public void onFailure(Call<Whether> call, Throwable t) {
+                        Toast.makeText(getApplicationContext(), t.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                });
             }
         });
 
